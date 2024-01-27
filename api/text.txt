@@ -1,0 +1,578 @@
+from flask import Flask, request, url_for, session, redirect, render_template
+import spotipy
+from spotipy.oauth2 import SpotifyOAuth
+import time 
+from time import gmtime, strftime
+import os
+
+CLIENT_ID = "86a224772b124b51989123bed131d2e4"
+CLIENT_SECRET = "57da38d12b31449a80df5b37256d7a29"
+SECRET_KEY = "asdf"
+TOKEN_CODE = "token_info"
+MEDIUM_TERM = "medium_term"
+SHORT_TERM = "short_term"
+LONG_TERM = "long_term"
+
+def create_spotify_oauth():
+    return SpotifyOAuth(
+        client_id=CLIENT_ID,
+        client_secret=CLIENT_SECRET,
+        redirect_uri=url_for("redirectPage",_external=True), 
+        scope="user-top-read user-library-read user-read-recently-played"
+    )
+
+app = Flask(__name__)
+app.secret_key = SECRET_KEY
+app.config['SESSION_COOKIE_NAME'] = 'Eriks Cookie'
+
+@app.route('/')
+def index():
+    name = 'username'
+    return render_template('index.html', title='Welcome', username=name)
+
+@app.route('/login')
+def login():
+    sp_oauth = create_spotify_oauth()
+    auth_url = sp_oauth.get_authorize_url()
+    return redirect(auth_url)
+
+@app.route('/redirect')
+def redirectPage():
+    sp_oauth = create_spotify_oauth()
+    session.clear() 
+    code = request.args.get('code')
+    token_info = sp_oauth.get_access_token(code)
+    session[TOKEN_CODE] = token_info
+    print(f"Access Token: {token_info['access_token']}")  # Add this line
+    return redirect(url_for("getTracks", _external=True))
+
+def get_token(): 
+    token_info = session.get(TOKEN_CODE, None)
+    if not token_info: 
+        raise "exception"
+    now = int(time.time())
+    is_expired = token_info['expires_at'] - now < 60 
+    if (is_expired): 
+        sp_oauth = create_spotify_oauth()
+        token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
+        session[TOKEN_CODE] = token_info  # Store the new token info in the session
+    return token_info 
+
+
+@app.route('/getTracks')
+def getTracks():
+    try:
+        token_info = get_token()
+    except:
+        print("user not logged in")
+        return redirect("/")
+    
+    sp = spotipy.Spotify(auth=token_info['access_token'])
+    current_user_name = sp.current_user()['display_name']
+
+    # Replace 'YOUR_TAYLOR_SWIFT_SPOTIFY_ID' with Taylor Swift's Spotify ID.
+    taylor_swift_id = '06HL4z0CvFAxyc27GXpf02'
+
+    # Get the user's top tracks for different time ranges
+    long_term_tracks = sp.current_user_top_tracks(limit=1000, time_range=LONG_TERM)
+    medium_term_tracks = sp.current_user_top_tracks(limit=1000, time_range=MEDIUM_TERM)
+    short_term_tracks = sp.current_user_top_tracks(limit=1000, time_range=SHORT_TERM)
+
+
+    # Filter the top tracks to get Taylor Swift's tracks for each time range
+    long_term_taylor_swift_tracks = [track for track in long_term_tracks['items'] if any(artist['id'] == taylor_swift_id for artist in track['artists'])]
+    medium_term_taylor_swift_tracks = [track for track in medium_term_tracks['items'] if any(artist['id'] == taylor_swift_id for artist in track['artists'])]
+    short_term_taylor_swift_tracks = [track for track in short_term_tracks['items'] if any(artist['id'] == taylor_swift_id for artist in track['artists'])]
+
+    # Take the top 10 Taylor Swift tracks for the long-term
+    short_term_songs = short_term_taylor_swift_tracks[:10]
+    medium_term_songs = medium_term_taylor_swift_tracks[:10]
+    long_term_songs = long_term_taylor_swift_tracks[:10]
+
+    return render_template(
+        'receipt.html',
+        user_display_name=current_user_name,
+        long_term_songs=long_term_songs,
+        medium_term_songs=medium_term_songs,
+        short_term_songs=short_term_songs,
+        currentTime=gmtime()
+    )
+
+
+@app.template_filter('strftime')
+def _jinja2_filter_datetime(date, fmt=None):
+    return strftime("%a, %d %b %Y", date)
+
+@app.template_filter('mmss')
+def _jinja2_filter_miliseconds(time, fmt=None):
+    time = int(time / 1000)
+    minutes = time // 60 
+    seconds = time % 60 
+    if seconds < 10: 
+        return str(minutes) + ":0" + str(seconds)
+    return str(minutes) + ":" + str(seconds ) 
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
+
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" href="../static/icon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="../static/icon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>SWIFTIFY</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link href="https://fonts.cdnfonts.com/css/metropolis-2" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+
+    <style>
+        .content {
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center center;
+        }
+
+        /* Small screen background */
+        @media (max-width: 890px) {
+            .content {
+                background-image: url('../static/tsbg2.png');
+            }
+            .tsbg{
+                display: none;
+            }
+        }
+        
+        /* Large screen background */
+        @media (min-width: 891px) {
+            .content {
+                background-image: url('../static/bg.png');
+            }
+        }
+
+        
+    </style>
+</head>
+<body>
+    <div class="position-fixed  w-100 p-3" style="top: 0px; left: 0px; background-color: rgba(0, 0, 0, 0.682); z-index: 999; ">
+        <img src="../static/logo.png" alt="" width="120px">
+    </div>
+    
+    <div class="content">
+    <div class="d-flex justify-content-center align-items-center" style="height: 100%;">
+        <div class="bg col-12 row" style="height: 100%;">
+            <div class="col-lg-6 p-0 col-md-12 col-sm-12 w-100 d-flex flex-column justify-content-center align-items-center"
+                    style="max-height: 100vh;" data-aos="fade-right">
+                <div class="p-lg-5 p-md-5 p-2  d-flex flex-column justify-content-center align-items-center"
+                        style="min-height: 100vh;">
+                    <iframe class="" src="https://giphy.com/embed/vdbyUtn36F0Z0IGd6F" width="100" height="100"
+                            frameBorder="0" class="giphy-embed" allowFullScreen></iframe>
+                    <h1 class="w-100 m-0" style="font-weight: bold; color: #a4d39b;">Welcome to Spotify TS Wrap</h1>
+                    <hr class="w-25">
+                    <p style="color: white; font-size: 14px;"> Swiftify, the ultimate destination for discovering your most-played tracks by the iconic artist, Taylor Swift, on Spotify. Whether you're a die-hard Swiftie or a casual listener, this website extracts and presents your top 10 Taylor Swift songs based on your listening history, directly from the world's leading music streaming platform. Find out your personal favorites and dive into the enchanting world of Taylor Swift's music now!
+                    </p>
+                    <br>
+                    <div class="w-100 text-center ">
+                        <button class="spotifyButton m-0 bi bi-spotify" onclick="location.href = '/login';">
+                            &nbsp;Log in with Spotify
+                        </button>
+                    </div>
+
+                </div>
+                <div class="position-absolute m-0 p-0" style="bottom: 0px;">
+                    <p class="m-0 text-light text-center " style="font-size: 12px;">This website was inspired by the Instagram account
+                        @albumreceipts!
+                    </p>
+                </div>
+            </div>
+
+            <div data-aos="zoom-in" class="col-lg-6 col-md-12 col-sm-12 d-lg-flex d-none  flex-column p-0 justify-content-center align-items-center"
+                    style="max-height: 100vh;">
+                <div class="" style="width: 100%; height: 100%; overflow: hidden;">
+                    <img width="100%" height="100%" src="../static/tsbg.png" style="object-fit: cover;" alt="">
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+<script>
+    AOS.init({
+duration: 2000,  // Animation duration in milliseconds
+once: true,      // Only animate elements once
+});
+
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" href="../static/icon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="../static/icon.ico" type="image/x-icon">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>SWIFTIFY</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link href="https://fonts.cdnfonts.com/css/metropolis-2" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+    <script src="https://unpkg.com/vanilla-tilt"></script>
+
+
+    <style>
+        .receiptContainerWrapperContent {
+    background-color: transparent !important;
+}
+
+            .content {
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center center;
+        }
+
+        /* Small screen background */
+        @media (max-width: 890px) {
+            .content {
+                background-image: url('../static/tsbg2.png');
+            }
+            .tsbg{
+                display: none;
+            }
+        }
+        
+        /* Large screen background */
+        @media (min-width: 891px) {
+            .content {
+                background-image: url('../static/bglight.png');
+            }
+        }
+        #container {
+            overflow: hidden;
+            position: relative;
+            width: 100%;
+            height: 200px;
+        }
+        #animated-div {
+            position: absolute;
+            width: 500%;
+            height: 200px;
+            background: url('../static/taylor2.png') repeat-x;
+            animation: scroll 30s linear infinite;
+        }
+        @keyframes scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+    </style>
+</head>
+<body onclick="playAudio()" onload="showContent('short_term_receipt')">
+
+        {% from "receiptContainer.html" import receiptContainer with context %}
+    
+    <script>
+
+        var activeReceipt;
+        function showContent(id) {
+            // set all of the other ones to invisible
+            for (let i = 0; i < document.querySelectorAll(".receiptContainer").length; i++) {
+                document.querySelectorAll(".receiptContainer")[i].style.display = "none"
+            }
+            document.getElementById(id).style.display = 'inline-block'
+            document.getElementById('downloadPicButton').style.display = 'inline-block'
+            activeReceipt = id
+        }
+
+        function hiddenClone(element) {
+    // Create clone of element
+    var clone = element.cloneNode(true);
+
+    // Set the clone's width to match the container's width
+    var containerWidth = element.offsetWidth;
+    clone.style.width = containerWidth + "px";
+
+    // Position element relatively within the body but still out of the viewport
+    var style = clone.style;
+    style.position = "relative";
+    style.top = window.innerHeight + "px";
+    style.left = 0;
+
+    // Append clone to body and apply transparent background to clone
+    document.body.appendChild(clone);
+    clone.style.backgroundColor = "transparent";
+
+    return clone;
+}
+
+$(document).ready(function () {
+    var element = $(".receiptClone");  // Select the clone element with the added class
+
+    $("#downloadPicButton").on('click', function () {
+        var offScreen = document.querySelector(".receiptContainerWrapperContent");
+        var clone = hiddenClone(offScreen);
+        clone.style.backgroundColor = "transparent";  // Set the background color to transparent
+        var scale = 3; // Increase the scale for higher quality (you can adjust this value)
+        html2canvas(clone, {
+            scrollY: -window.scrollY,
+            backgroundColor: null, // Set backgroundColor to null
+            scale: scale // Set the scale for higher quality
+        }).then((canvas) => {
+            var dataURL = canvas.toDataURL("image/png", 1.0);
+            document.body.removeChild(clone);
+            var link = document.createElement("a");
+            link.href = dataURL;
+            link.download = `${activeReceipt}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    });
+});
+function scrollToElement(elementId) {
+    const element = document.getElementById(elementId);
+
+    if (element) {
+        if (window.innerWidth <= 768) { // Adjust the screen size condition as needed
+            element.scrollIntoView({
+            behavior: "smooth"
+        });
+        } else {
+            // If the screen size is not small, scroll normally (without smooth scroll)
+            window.scrollTo(0, element.offsetTop);
+        }
+    }
+}
+
+    </script>
+
+<div class="position-fixed  w-100 p-3" style="top: 0px; left: 0px; background-color: rgba(0, 0, 0, 0.682); z-index: 999; ">
+    <img src="../static/logo.png" alt="" width="120px">
+</div>
+
+<div class="content"  >
+    <div class="d-flex justify-content-center align-items-center vh-100 p-lg-5" style="min-height: 100vh;">
+        <div class="row col-12 d-flex justify-content-center align-items-center   mt-lg-4 mt-md-0  mt-5">
+                <div class=" col-lg-6 col-md-12 col-12 d-flex flex-column mt-lg-0 mt-md-0 mt-5 mb-3" data-aos="fade-down">
+                <img width="100%" src="../static/drop.png" alt="">
+                <br>
+                    <p style="font-size: 14px; color: white;">
+                        This Month: Your top 10 tracks this month. 
+                        Last 6 Months: Your top 10 tracks from the last six months.
+                        All Time: Your overall top 10 tracks of all time.
+                    </p>                    
+
+                    <div>
+                        <a style="text-decoration: none; cursor: pointer;" onclick="scrollToElement('receiptContainerWrapper')" class="d-flex w-100  flex-lg-row flex-md-row flex-column align-items-center justify-content-center">
+                            <button onclick="showContent('short_term_receipt')" style="width: 200px; margin: 10px;" class="time  generatePicButton"> This Month </button>
+                            <button onclick="showContent('medium_term_receipt')" style="width: 200px; margin: 10px;" class="time generatePicButton"> Last 6 Months </button>
+                            <button onclick="showContent('long_term_receipt')" style="width: 200px; margin: 10px;" class="time  generatePicButton"> All Time </button>    
+                        </a>
+                        <br>
+        
+        
+                        <div class="w-100 m-0 tsfooter d-flex flex-column align-items-center justify-content-start">
+                            <div id="container">
+                                <div id="animated-div"></div>
+                            </div>
+                            
+                            <iframe class=" mx-5 " style="margin-top: -200px; z-index: 999;"  src="https://giphy.com/embed/vdbyUtn36F0Z0IGd6F" width="100" height="200"
+                            frameBorder="0" class="giphy-embed" allowFullScreen></iframe>
+                        </div>
+        
+                    </div>
+                
+
+                <audio id="myAudio">
+                    <source src="../static/sparksfly.mp3" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                </audio>
+                <script>
+                    function playAudio() {
+                        document.getElementById("myAudio").play();
+                    }
+                </script>
+            </div>
+
+            <div class="col-lg-5  col-md-12 col-12 m-0 p-0" data-aos="fade-left" data-aos-delay="300">
+                <div id="receiptContainerWrapper" class="receiptContainerWrapperContent receiptClone d-flex justify-content-center" style="overflow: hidden; width: 100%;">
+                    {{ receiptContainer(user_display_name, short_term_songs, 'short_term_receipt', 'My TS Top Tracks [This Month]') }}
+                    {{ receiptContainer(user_display_name, medium_term_songs, 'medium_term_receipt', 'My TS Top Tracks [Last 6 Months]') }}
+                    {{ receiptContainer(user_display_name, long_term_songs, 'long_term_receipt', 'My TS Top Tracks [All Time]') }}
+                </div>
+                
+                <script>
+                    VanillaTilt.init(document.querySelectorAll(".receiptClone"), {
+                        max: 25,
+                        speed: 400
+                    });
+                </script>
+                <div class="w-100 text-center mb-3">
+                    <p class=" d-lg-none d-md-none d-sm-none d-block" style="font-size: 10px; color: rgb(227, 227, 227);">[tilt your phone]</p>
+
+                    <button class="generatePicButton downloadButton" id="downloadPicButton"> <i class="bi bi-download"></i> Download</button>
+                </div>
+
+                </div>
+    
+            </div>
+            
+
+        
+                                    
+
+
+        </div>
+    </div>
+</div>
+    <script>
+        AOS.init({
+    duration: 2000,  // Animation duration in milliseconds
+    once: true,      // Only animate elements once
+    });
+    
+    </script>
+
+<script>
+    var container = document.getElementById('receiptContainer');
+    var items = container.getElementsByClassName('receiptClone');
+
+    for (var i = 0; i < items.length; i++) {
+        items[i].addEventListener('mouseenter', function() {
+            this.style.transform = "scale(1.1)";
+        });
+
+        items[i].addEventListener('mouseleave', function() {
+            this.style.transform = "scale(1)";
+        });
+    }
+</script>
+
+    
+
+</body>
+</html>
+
+
+
+{% macro receiptContainer(display_name, songs, id, duration) -%}
+<div class="receiptContainer " id="{{ id }}" style="display: none; ">
+    <div class="receiptDownload" >
+        <img src="../static/ticket.png" width="300px" style="min-width: 300px;" alt="">
+        <p class="date text-start " style="color: white; position: absolute; width: 80%; font-weight: bolder; top: 110px; left: 50%; transform: translateX(-50%); font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+            Taylor Swift: The Eras Tour
+        </p>
+        <hr class="border-bottom" style="color: white; position: absolute; width: 80%; font-weight: bold; top: 110px; left: 50%; transform: translateX(-50%); font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+        <p class="date text-start " style="color: white; position: absolute; width: 80%; font-weight: bold; top: 135px; left: 50%; transform: translateX(-50%); font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+            {{currentTime|strftime}}
+        </p>
+        <p class="date text-start " style="color: white; position: absolute; width: 80%; font-weight: bold; top: 150px; left: 50%; transform: translateX(-50%); font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+            {{ duration }}
+        </p>
+
+        <p class="date text-start " style="color: white; position: absolute; width: 80%; font-weight: bold; top: 165px; left: 50%; transform: translateX(-50%); font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+            SEAT #0001 FOR {{ display_name }}
+        </p>
+ <table class=" text-start  " style=" color: white; position: absolute; width: 280px; font-weight: bold; top: 190px; left: 50%; transform: translateX(-50%); font-size: 10px; ">
+    <thead>
+        <tr>
+            <td class="begin">
+                NO
+            </td>
+            <td>
+                SONGS
+            </td>
+            <td class="length">
+                AMT
+            </td>
+        </tr>
+    </thead>
+
+    {% for song in songs %}
+    <tr class="" >
+        <td class="begin">
+            {{ loop.index }}
+        </td>
+        <td class="name text-start" style="white-space: nowrap; font-weight: bold; overflow: hidden; text-overflow: ellipsis; width: 160px; display: block;">
+            {{ song.name }}
+        </td>
+                <td class="length">
+            {{ song.duration_ms | mmss }}
+        </td>
+    </tr>
+{% endfor %}
+
+<tr class="total-counts">
+    <td class="begin" colspan="2">
+        ITEM COUNT:
+    </td>
+    <td class="length">
+        {{ songs | length }}
+    </td>
+</tr>
+<tr class="total-counts-end">
+    <td class="begin" colspan="2">
+        TOTAL:
+    </td>
+    <td class="length">
+        {{ (songs | sum(attribute='duration_ms')) | mmss }}
+    </td>
+</tr>
+
+
+
+ </table>
+
+ <p class="date text-start " style="color: white; position: absolute; width: 80%; font-weight: bold; top: 395px; left: 50%; transform: translateX(-50%); font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+    CARD #: **** **** **** {{ currentTime.tm_year }}
+</p>
+
+<p class="date text-start " style="color: white; position: absolute; width: 80%; font-weight: bold; top: 410px; left: 50%; transform: translateX(-50%); font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+    AUTH CODE: 123421
+</p>
+<p class="date text-start " style="color: white; position: absolute; width: 80%; font-weight: bold; top: 425px; left: 50%; transform: translateX(-50%); font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+    CARDHOLDER: {{ display_name }}    
+
+</p>
+<p class="date text-start " style="color: white; position: absolute; width: 80%; font-weight: bold; top: 440px; left: 50%; transform: translateX(-50%); font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+    Release date: October 13, 2023    
+</p>
+
+<p class="date text-center " style="color: white; position: absolute; width: 80%; font-weight: bold; top: 470px; left: 50%; transform: translateX(-50%); font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+    THANK YOU FOR BOOKING!
+</p>
+
+<p class="date text-center " style="color: white; position: absolute; width: 80%; font-weight: bold; bottom: 15px; left: 50%; transform: translateX(-50%); font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+    https://swiftify.onrender.com
+</p>
+
+    <img style="width: 80px; position: absolute;   top: 520px; left: 50px;  font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;" src="{{ url_for('static', filename='qr.png') }}">
+    <p class="date text-start " style="color: white; position: absolute; width: 80%; font-weight: bold; top: 545px; left: 41%;  font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+        Get your ticket by simply <br> scanning the QR code!    </p>
+
+        </div>
+
+    </div>
+{%- endmacro %}

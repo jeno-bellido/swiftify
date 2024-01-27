@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>My Website</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link href="https://fonts.cdnfonts.com/css/metropolis-2" rel="stylesheet">
+    <style>
+        .content {
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center center;
+        }
+
+        /* Small screen background */
+        @media (max-width: 890px) {
+            .content {
+                background-image: url('../static/tsbg2.png');
+            }
+            .tsbg{
+                display: none;
+            }
+        }
+        
+        /* Large screen background */
+        @media (min-width: 891px) {
+            .content {
+                background-image: url('../static/tsbg3.png');
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="position-absolute" style="top: 20px; left: 20px;">
+    <img src="../static/logo.png" alt="" width="120px">
+</div>
+<div class="content">
+    <div class="d-flex justify-content-center align-items-center" style="height: 100%;">
+        <div class="bg col-12 row" style="height: 100%;">
+            <center class="col-lg-6 p-0 col-md-12 col-sm-12 w-100 d-flex flex-column justify-content-center align-items-center"
+                    style="max-height: 100vh;">
+                <div class="p-lg-5 p-md-5 d-flex flex-column justify-content-center align-items-center"
+                        style="min-height: 100vh;">
+                    <iframe class="" src="https://giphy.com/embed/vdbyUtn36F0Z0IGd6F" width="100" height="100"
+                            frameBorder="0" class="giphy-embed" allowFullScreen></iframe>
+                    <h1 class="w-100 m-0" style="font-weight: bold; color: #a4d39b;">Welcome to Spotify TS Wrap</h1>
+                    <hr class="w-25">
+                    <p style="color: white; font-size: 14px;">Our ultimate destination for discovering the most played
+                        songs by the iconic artist, Taylor Swift, on Spotify. Whether you're a die-hard Swiftie or just a
+                        casual listener, this website provides you with the latest and most accurate ranking of Taylor
+                        Swift's top tracks based on their popularity on the world's leading music streaming platform. Find
+                        out your top 10 Taylor Swift Songs on Spotify now!
+                    </p>
+                    <br>
+                    <div class="w-100 text-center ">
+                        <button class="spotifyButton m-0 bi bi-spotify" onclick="location.href = '/login';">
+                            &nbsp;Log in with Spotify
+                        </button>
+                    </div>
+
+                </div>
+                <div class="position-absolute m-0" style="bottom: 0px;">
+                    <p class="m-0 text-light" style="font-size: 12px;">This website was inspired by the Instagram account
+                        @albumreceipts!
+                    </p>
+                </div>
+            </center>
+
+        
+        </div>
+    </div>
+</div>
+</body>
+</html>

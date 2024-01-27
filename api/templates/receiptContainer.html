@@ -1,0 +1,236 @@
+
+{% macro receiptContainer(display_name, songs, id, duration) -%}
+<div class="receiptContainer " id="{{ id }}" style="display: none; ">
+    <div class="receiptDownload" >
+        
+        <img src="../static/ticket3.png" width="300px" style="min-width: 300px;" alt="">
+        
+        <table class=" text-start" style=" color: white; position: absolute; width: 280px; font-weight: bold; top: 110px; left: 50%; transform: translateX(-50%); font-size: 10px; ">
+            <thead>
+                <tr>
+                   <td class=" m-0 p-0  " style="border-bottom: 1px solid white">
+                    <p class="date text-start p-0 m-0 px-1" style=" color: white;  font-weight: 600; font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                        Taylor Swift: The Eras Tour
+                    </p>
+                   </td>
+                </tr>
+                
+            </thead>
+         </table>
+
+         <table class=" text-start  " style=" color: white; position: absolute; width: 280px; font-weight: bold; top: 135px; left: 50%; transform: translateX(-50%); font-size: 10px; ">
+            <thead>
+                <tr>
+                   <td class=" m-0 p-0  " >
+                    <p class="date text-start p-0 m-0 px-1" style="font-weight: 500;color: white; font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                        {{currentTime|strftime}}
+                    </p>
+            
+                </td>
+                </tr>
+
+                <tr>
+                    <td class=" m-0 p-0" >
+                     <p class="date text-start p-0 m-0 px-1" style="font-weight: 500;color: white; font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                         {{ duration }}
+                     </p> 
+                 </td>
+                 </tr>
+
+                 <tr>
+                    <td class=" m-0 p-0" >
+                     <p class="date text-start p-0 m-0 px-1" style="font-weight: 500; color: white; font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                         SEAT #0001 FOR {{ display_name }}
+                     </p>
+                                 
+                 </td>
+                 </tr>
+ 
+                
+            </thead>
+         </table>
+        
+        <table class=" text-start  " style=" color: white; position: absolute; width: 280px; font-weight: bold; top: 190px; left: 50%; transform: translateX(-50%); font-size: 10px; ">
+            <thead>
+                <tr>
+                    <td class="begin" style="font-weight: 500;">
+                        NO
+                    </td>
+                    <td style="font-weight: 500;">
+                        SONGS
+                    </td>
+                    <td class="length ">
+                        <p class="m-0 p-0" style="text-align: end;font-weight: 500;">
+                            AMT
+                        </p>
+                        
+                    </td>
+                </tr>
+            </thead>
+
+                {% for song in songs %}
+                <tr class="" >
+                    <td class="begin" style="font-weight: 500;">
+                        {{ loop.index }}
+                    </td>
+                    <td class="name text-start song-name" >
+                        <p class="m-0 p-0" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 160px; font-weight: 500;">
+                        {{ song.name }}
+                        </p>
+                    </td>
+                            <td class="length ">
+                        <p class="m-0 p-0" style="text-align: end; font-weight: 500;">
+                            {{ song.duration_ms | mmss }}
+                        </p>
+    
+                    </td>
+                </tr>
+            {% endfor %}
+
+            <tr class="total-counts">
+                <td class="begin" colspan="2" style="font-weight: 500;">
+                    ITEM COUNT:
+                </td>
+                <td class="length">
+                    <p class="p-0 m-0" style="text-align: end;" style="font-weight: 500;">
+                        {{ songs | length }}
+                    </p>
+                </td>
+            </tr>
+            <tr class="total-counts-end">
+                <td class="begin" colspan="2" style="font-weight: 500;">
+                    TOTAL:
+                </td>
+                <td class="length">
+                    <p class="p-0 m-0" style="text-align: end; font-weight: 500;">
+                        {{ (songs | sum(attribute='duration_ms')) | mmss }}
+                    </p>
+                </td>
+            </tr>
+
+
+
+            </table>
+
+
+
+            <table class=" text-start  " style=" color: white; position: absolute; width: 280px; font-weight: bold; top: 395px; left: 50%; transform: translateX(-50%); font-size: 10px; ">
+                <thead>
+                    <tr>
+                       <td class=" m-0 p-0  " >
+                        <p class="date text-start p-0 m-0 px-1" style="font-weight: 500; color: white; font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                            CARD #: 
+                        </p>
+                        <td>
+                            <p class="p-0 m-0" style="text-align: end; font-weight: 500;">
+                                **** **** ****{{ currentTime.tm_year }}                            </p>
+        
+                        </td>
+                
+                    </td>
+                    </tr>
+    
+                    <tr>
+                        <td class=" m-0 p-0" >
+                         <p class="date text-start p-0 m-0 px-1" style="font-weight: 500; color: white; font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                            AUTH CODE: 
+
+                         </p> 
+                     </td>
+                     <td>
+                        <p class="p-0 m-0" style="text-align: end; font-weight: 500;">
+                            01010100
+                        </p>
+
+                    </td>
+
+                     </tr>
+    
+                     <tr>
+                        <td class=" m-0 p-0" >
+                         <p class="date text-start p-0 m-0 px-1" style="font-weight: 500;color: white; font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                            CARDHOLDER: 
+
+                         </p>
+                                     
+                     </td>
+                     <td>
+                        <p class="p-0 m-0" style="text-align: end; font-weight: 500;">
+                            {{ display_name }}    
+                        </p>
+
+                    </td>
+
+                     </tr>
+
+                     <tr>
+                        <td class=" m-0 p-0" >
+                         <p class="date text-start p-0 m-0 px-1" style="font-weight: 500; color: white; font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                            Release date:  
+                         </p>
+                                     
+                     </td>
+                     <td>
+                        <p class="p-0 m-0" style="text-align: end; font-weight: 500;">
+                            October 13, 2023      
+                        </p>
+
+                    </td>
+
+                     </tr>
+     
+
+     
+                    
+                </thead>
+             </table>
+
+<table class=" text-start" style=" color: white; position: absolute; width: 280px; font-weight: bold; top: 470px; left: 50%; transform: translateX(-50%); font-size: 10px; ">
+<thead>
+    <tr>
+        <td class=" m-0 p-0  text-center" >
+        <p class="date text-start p-0 m-0 px-1" style=" color: white;  font-weight: 500; font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+            THANK YOU FOR BOOKING!
+        </p>
+        </td>
+    </tr>
+    
+</thead>
+</table>
+
+ <table class=" text-start" style=" color: white; position: absolute; width: 280px; font-weight: bold; bottom: 30px; left: 50%; transform: translateX(-50%); font-size: 10px; ">
+    <thead>
+        <tr>
+           <td class=" m-0 p-0  text-center " >
+            <p class="text-start p-0 m-0 px-1" style=" color: white;  font-weight: 500; font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-transform: lowercase;">
+                https://swiftify-spotifytswrap.onrender.com
+            </p>
+           </td>
+        </tr>
+        
+    </thead>
+ </table>
+
+ <table class=" text-start" style=" color: white; position: absolute; width: 280px; font-weight: bold; top: 523px; left: 55%; transform: translateX(-50%); font-size: 10px; ">
+    <thead>
+        <tr>
+           <td class=" m-0 p-0   " >
+            <img style="width: 80px; font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;" src="{{ url_for('static', filename='qr.png') }}">
+        </td>
+        </tr>
+        
+    </thead>
+ </table>
+
+    <p class="date text-start " style="font-weight: 500;color: white; position: absolute; width: 80%;  top: 548px; left: 41%;  font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+        Get your ticket by easily <br> scanning the QR code!     </p>
+        
+
+
+
+
+
+        </div>
+
+    </div>
+{%- endmacro %}
